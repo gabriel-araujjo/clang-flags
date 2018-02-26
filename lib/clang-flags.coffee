@@ -10,27 +10,28 @@ module.exports =
     return flags
   activate: (state) ->
 
-getFileContents = (startFile, fileName) ->
+getFileContents = (startFile, fileName, searchPath = ['.']) ->
   searchDir = path.dirname startFile
   while searchDir
-    searchFilePath = path.join searchDir, fileName
-    try
-      searchFileStats = fs.statSync searchFilePath
-      if searchFileStats.isFile()
-        try
-          contents = fs.readFileSync searchFilePath, 'utf8'
-          return [searchDir, contents]
-        catch error
-          console.log "clang-flags for " + fileName + " couldn't read file " + searchFilePath
-          console.log error
-        return [null, null]
+    for p in searchPath
+      searchFilePath = path.join searchDir, p, fileName
+      try
+        searchFileStats = fs.statSync searchFilePath
+        if searchFileStats.isFile()
+          try
+            contents = fs.readFileSync searchFilePath, 'utf8'
+            return [searchDir, contents]
+          catch error
+            console.log "clang-flags for " + fileName + " couldn't read file " + searchFilePath
+            console.log error
+          return [null, null]
     parentDir = path.dirname searchDir
     break if parentDir == searchDir
     searchDir = parentDir
   return [null, null]
 
 getClangFlagsCompDB = (fileName) ->
-  [searchDir, compDBContents] = getFileContents(fileName, "compile_commands.json")
+  [searchDir, compDBContents] = getFileContents(fileName, "compile_commands.json", ['.','build'])
   args = []
   if compDBContents != null && compDBContents.length > 0
     compDB = JSON.parse(compDBContents)
